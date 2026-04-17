@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { Table, OrderItem, initialTables, products } from "../data/mockData";
+import { Table, OrderItem } from "../data/mockData";
 
 interface POSContextType {
   tables: Table[];
@@ -19,8 +19,20 @@ interface POSContextType {
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
 
+// Función auxiliar para generar 12 mesas limpias
+const generateCleanTables = (): Table[] => {
+  return Array.from({ length: 12 }, (_, i) => ({
+    id: (i + 1).toString(),
+    number: i + 1,
+    status: "libre",
+    total: 0,
+    items: []
+  }));
+};
+
 export function POSProvider({ children }: { children: ReactNode }) {
-  const [tables, setTables] = useState<Table[]>(initialTables);
+  // CAMBIO CLAVE: Ya no usamos 'initialTables' del mockData, usamos nuestra función limpia
+  const [tables, setTables] = useState<Table[]>(generateCleanTables());
   const [counterSales, setCounterSales] = useState(0);
 
   const updateTable = (tableId: string, items: OrderItem[]) => {
@@ -67,6 +79,7 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
   const getTodayStats = () => {
     const tableSales = tables.reduce((sum, table) => {
+      // Solo sumamos al total del día lo que está en proceso de cobro o ya cobrado
       if (table.status === "cerrando") {
         return sum + table.total;
       }
@@ -75,7 +88,6 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
     const totalSales = tableSales + counterSales;
     
-    // Mock data for cash/card split (60% cash, 40% card)
     const cashSales = totalSales * 0.6;
     const cardSales = totalSales * 0.4;
 
