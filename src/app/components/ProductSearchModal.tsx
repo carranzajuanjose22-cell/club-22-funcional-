@@ -1,158 +1,109 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
 import { Search, X, Plus } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { products, Product, OrderItem } from "../data/mockData";
+import { Input } from "./ui/input";
 
 interface ProductSearchModalProps {
   open: boolean;
   onClose: () => void;
-  onAddProduct: (item: OrderItem) => void;
-  isTableView?: boolean;
+  onAddProduct: (item: any) => void;
+  isTableView: boolean;
 }
 
-export function ProductSearchModal({ 
-  open, 
-  onClose, 
-  onAddProduct,
-  isTableView = true 
-}: ProductSearchModalProps) {
+export function ProductSearchModal({ open, onClose, onAddProduct, isTableView }: ProductSearchModalProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
-  const [quantities, setQuantities] = useState<{ [key: string]: number }>({});
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const categories = ["Todos", "Vinos", "Tapas", "Cervezas", "Promociones"];
+  useEffect(() => {
+    if (open) {
+      const fetchProducts = async () => {
+        setLoading(true);
+        // Traemos los productos reales de tu tabla en Supabase
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .order('name', { ascending: true });
+        
+        if (error) {
+          console.error("Error cargando productos:", error.message);
+        } else {
+          setProducts(data || []);
+        }
+        setLoading(false);
+      };
+      fetchProducts();
+    }
+  }, [open]);
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === "Todos" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredProducts = products.filter(p => 
+    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.category?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const handleAddProduct = (product: Product) => {
-    const quantity = quantities[product.id] || 1;
-    const price = isTableView ? product.priceTable : product.priceCounter;
-    
-    const orderItem: OrderItem = {
-      productId: product.id,
-      productName: product.name,
-      quantity,
-      unitPrice: price,
-      subtotal: price * quantity
-    };
-
-    onAddProduct(orderItem);
-    setQuantities({ ...quantities, [product.id]: 1 });
-  };
-
-  const updateQuantity = (productId: string, value: number) => {
-    setQuantities({ ...quantities, [productId]: Math.max(1, value) });
-  };
+  if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl bg-[#1A1A1A] border-white/10 text-white max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="text-2xl text-white">Buscar Productos</DialogTitle>
-        </DialogHeader>
-
-        {/* Search */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" strokeWidth={1.5} />
-          <Input
-            placeholder="Buscar por nombre..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-[#2A2A2A] border-white/10 text-white"
-          />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="bg-[#1A1A1A] border border-white/10 w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden">
+        <div className="p-6 border-b border-white/10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl text-white font-bold">Agregar Producto</h2>
+            <button onClick={onClose} className="text-gray-400 hover:text-white">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+            <Input 
+              autoFocus
+              placeholder="Buscar por nombre o categoría..." 
+              className="pl-10 bg-[#2A2A2A] border-white/10 text-white"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
 
-        {/* Category Filters */}
-        <div className="flex gap-2 mb-4 flex-wrap">
-          {categories.map(category => (
-            <Button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              variant={selectedCategory === category ? "default" : "outline"}
-              className={
-                selectedCategory === category
-                  ? "bg-[#C41E3A] hover:bg-[#A01830] text-white border-0"
-                  : "bg-transparent border-white/20 text-gray-300 hover:bg-[#2A2A2A] hover:text-white"
-              }
-            >
-              {category}
-            </Button>
-          ))}
-        </div>
-
-        {/* Products List */}
-        <div className="flex-1 overflow-y-auto space-y-2">
-          {filteredProducts.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              No se encontraron productos
-            </div>
+        <div className="max-h-[60vh] overflow-y-auto p-4 space-y-2">
+          {loading ? (
+            <p className="text-center text-gray-500 py-8">Conectando con Supabase...</p>
+          ) : filteredProducts.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">No hay productos cargados</p>
           ) : (
-            filteredProducts.map(product => (
-              <div
+            filteredProducts.map((product) => (
+              <div 
                 key={product.id}
-                className="bg-[#2A2A2A] rounded-lg p-4 flex items-center justify-between"
+                className="flex items-center justify-between p-4 bg-[#2A2A2A] hover:bg-[#333] rounded-lg border border-transparent hover:border-[#C41E3A]/50 transition-all group"
               >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="text-white">{product.name}</p>
-                    <Badge variant="outline" className="border-white/20 text-gray-300 text-xs">
-                      {product.category}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <p className="text-[#C41E3A]">
-                      ${isTableView ? product.priceTable : product.priceCounter}
-                    </p>
-                    <p className="text-gray-400">Stock: {product.stock}</p>
-                  </div>
+                <div>
+                  <p className="text-white font-medium">{product.name}</p>
+                  <p className="text-xs text-gray-500">{product.category}</p>
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateQuantity(product.id, (quantities[product.id] || 1) - 1)}
-                      className="h-8 w-8 p-0 bg-transparent border-white/20 text-white hover:bg-[#C41E3A] hover:border-[#C41E3A]"
-                    >
-                      -
-                    </Button>
-                    <Input
-                      type="number"
-                      value={quantities[product.id] || 1}
-                      onChange={(e) => updateQuantity(product.id, parseInt(e.target.value) || 1)}
-                      className="w-16 h-8 text-center bg-[#1A1A1A] border-white/10 text-white"
-                    />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateQuantity(product.id, (quantities[product.id] || 1) + 1)}
-                      className="h-8 w-8 p-0 bg-transparent border-white/20 text-white hover:bg-[#C41E3A] hover:border-[#C41E3A]"
-                    >
-                      +
-                    </Button>
-                  </div>
-
-                  <Button
-                    onClick={() => handleAddProduct(product)}
-                    className="bg-[#C41E3A] hover:bg-[#A01830] text-white"
+                <div className="flex items-center gap-6">
+                  <p className="text-[#C41E3A] font-bold">
+                    ${isTableView ? (product.price_mesa || 0) : (product.price_mostrador || 0)}
+                  </p>
+                  <Button 
+                    size="sm"
+                    className="bg-[#C41E3A] hover:bg-[#A01830] text-white h-8"
+                    onClick={() => onAddProduct({
+                      productId: product.id,
+                      productName: product.name,
+                      quantity: 1,
+                      unitPrice: isTableView ? (product.price_mesa || 0) : (product.price_mostrador || 0),
+                      subtotal: isTableView ? (product.price_mesa || 0) : (product.price_mostrador || 0)
+                    })}
                   >
-                    <Plus className="w-4 h-4 mr-1" strokeWidth={1.5} />
-                    Agregar
+                    <Plus className="w-4 h-4 mr-1" /> Agregar
                   </Button>
                 </div>
               </div>
             ))
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
