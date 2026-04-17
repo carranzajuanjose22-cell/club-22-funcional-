@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase"; // RUTA CORREGIDA
 import { Search, X, Plus } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -38,8 +38,8 @@ export function ProductSearchModal({ open, onClose, onAddProduct, isTableView }:
   }, [open]);
 
   const filteredProducts = products.filter(p => 
-    p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.category?.toLowerCase().includes(searchTerm.toLowerCase())
+    (p.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+    (p.category?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   );
 
   if (!open) return null;
