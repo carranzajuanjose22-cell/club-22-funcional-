@@ -1,5 +1,21 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { Table, OrderItem } from "../data/mockData";
+
+// 1. Definición de tipos necesarios
+interface OrderItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  subtotal: number;
+}
+
+interface Table {
+  id: string;
+  number: number;
+  status: 'libre' | 'ocupada' | 'cerrando';
+  total: number;
+  items: OrderItem[];
+}
 
 interface POSContextType {
   tables: Table[];
@@ -19,97 +35,57 @@ interface POSContextType {
 
 const POSContext = createContext<POSContextType | undefined>(undefined);
 
-// Función auxiliar para generar 12 mesas limpias
-const generateCleanTables = (): Table[] => {
-  return Array.from({ length: 12 }, (_, i) => ({
-    id: (i + 1).toString(),
-    number: i + 1,
-    status: "libre" as "libre" | "ocupada" | "cerrando", // Forzamos el tipo exacto aquí
-    total: 0,
-    items: []
-  }));
-};;
-
 export function POSProvider({ children }: { children: ReactNode }) {
-  // CAMBIO CLAVE: Ya no usamos 'initialTables' del mockData, usamos nuestra función limpia
-  const [tables, setTables] = useState<Table[]>(generateCleanTables());
+  // 2. Mesas que arrancan SIEMPRE en cero
+  const [tables, setTables] = useState<Table[]>(
+    Array.from({ length: 12 }, (_, i) => ({
+      id: (i + 1).toString(),
+      number: i + 1,
+      status: 'libre',
+      total: 0,
+      items: []
+    }))
+  );
+
   const [counterSales, setCounterSales] = useState(0);
 
+  // 3. Funciones de gestión
   const updateTable = (tableId: string, items: OrderItem[]) => {
     setTables(prev => prev.map(table => {
       if (table.id === tableId) {
         const total = items.reduce((sum, item) => sum + item.subtotal, 0);
-        return {
-          ...table,
-          items,
-          total,
-          status: items.length > 0 ? "ocupada" as const : "libre" as const
-        };
+        return { ...table, items, total, status: items.length > 0 ? "ocupada" : "libre" };
       }
       return table;
     }));
   };
 
   const closeTable = (tableId: string) => {
-    setTables(prev => prev.map(table => {
-      if (table.id === tableId) {
-        return {
-          ...table,
-          items: [],
-          total: 0,
-          status: "libre" as const
-        };
-      }
-      return table;
-    }));
+    setTables(prev => prev.map(table => 
+      table.id === tableId ? { ...table, items: [], total: 0, status: "libre" } : table
+    ));
   };
 
   const setTableStatus = (tableId: string, status: "libre" | "ocupada" | "cerrando") => {
-    setTables(prev => prev.map(table => {
-      if (table.id === tableId) {
-        return { ...table, status };
-      }
-      return table;
-    }));
+    setTables(prev => prev.map(table => table.id === tableId ? { ...table, status } : table));
   };
 
-  const addCounterSale = (amount: number) => {
-    setCounterSales(prev => prev + amount);
-  };
+  const addCounterSale = (amount: number) => setCounterSales(prev => prev + amount);
 
   const getTodayStats = () => {
-    const tableSales = tables.reduce((sum, table) => {
-      // Solo sumamos al total del día lo que está en proceso de cobro o ya cobrado
-      if (table.status === "cerrando") {
-        return sum + table.total;
-      }
-      return sum;
-    }, 0);
-
+    const tableSales = tables.reduce((sum, table) => table.status === "cerrando" ? sum + table.total : sum, 0);
     const totalSales = tableSales + counterSales;
-    
-    const cashSales = totalSales * 0.6;
-    const cardSales = totalSales * 0.4;
-
     return {
       totalSales,
       tableSales,
       counterSales,
-      cashSales,
-      cardSales
+      cashSales: totalSales * 0.6,
+      cardSales: totalSales * 0.4
     };
   };
 
   return (
-    <POSContext.Provider value={{
-      tables,
-      updateTable,
-      closeTable,
-      setTableStatus,
-      getTodayStats,
-      counterSales,
-      addCounterSale
-    }}>
+    <POSContext.Provider value={{ tables, updateTable, closeTable, setTableStatus, getTodayStats, counterSales, addCounterSale }}>
       {children}
     </POSContext.Provider>
   );
@@ -117,8 +93,6 @@ export function POSProvider({ children }: { children: ReactNode }) {
 
 export function usePOS() {
   const context = useContext(POSContext);
-  if (!context) {
-    throw new Error("usePOS must be used within POSProvider");
-  }
+  if (!context) throw new Error("usePOS must be used within POSProvider");
   return context;
 }
