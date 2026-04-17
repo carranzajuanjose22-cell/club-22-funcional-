@@ -24,11 +24,11 @@ const generateCleanTables = (): Table[] => {
   return Array.from({ length: 12 }, (_, i) => ({
     id: (i + 1).toString(),
     number: i + 1,
-    status: "libre",
+    status: "libre" as "libre" | "ocupada" | "cerrando", // Forzamos el tipo exacto aquí
     total: 0,
     items: []
   }));
-};
+};;
 
 export function POSProvider({ children }: { children: ReactNode }) {
   // CAMBIO CLAVE: Ya no usamos 'initialTables' del mockData, usamos nuestra función limpia
