@@ -29,7 +29,6 @@ export function TableDetail() {
 
   const total = items.reduce((sum, item) => sum + item.subtotal, 0);
 
-  // --- FUNCIÓN DE IMPRESIÓN ---
   const handlePrint = () => {
     window.print();
   };
@@ -145,19 +144,12 @@ export function TableDetail() {
         total={total} 
       />
 
-      {/* Ticket para impresión - Técnica de posicionamiento absoluto para que el navegador lo detecte */}
-      <div 
-        style={{ 
-          position: 'absolute', 
-          left: '-9999px', 
-          top: 0, 
-          opacity: 0 
-        }}
-      >
+      {/* Sección de impresión habilitada por CSS */}
+      <div className="print-only-section">
         <div id="printable-ticket">
           <TicketTemplate 
             orderData={{
-              tableNumber: `Mesa ${table.number}`,
+              tableNumber: table.number,
               items: items,
               subtotal: total,
               discount: 0,
@@ -167,6 +159,6 @@ export function TableDetail() {
           />
         </div>
       </div>
-    </div> // CIERRE DEL DIV PRINCIPAL
+    </div>
   );
-} // CIERRE DEL COMPONENTE
+}

@@ -153,16 +153,8 @@ export function CounterSale() {
         total={total} 
       />
 
-      {/* Ticket oculto pero accesible para imprimir */}
-      <div 
-        className="print-container"
-        style={{ 
-          position: 'absolute', 
-          left: '-9999px', 
-          top: 0, 
-          opacity: 0 
-        }}
-      >
+      {/* Sección de impresión */}
+      <div className="print-only-section">
         <div id="printable-ticket">
           <TicketTemplate 
             orderData={{
@@ -176,6 +168,6 @@ export function CounterSale() {
           />
         </div>
       </div>
-    </div>
+    </div> // CIERRE DEL DIV PRINCIPAL
   );
 }

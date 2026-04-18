@@ -3,45 +3,35 @@
 @import './theme.css';
 
 /* --- ESTILOS PARA LA COMANDERA --- */
+/* Limpieza total para impresión */
 @media print {
-  /* 1. Reset total: ocultamos TODO lo que existe en la pantalla */
-  body * {
-    visibility: hidden !important;
+  /* Ocultar todo el contenido de la aplicación */
+  body > * {
     display: none !important;
   }
 
-  /* 2. Habilitamos ÚNICAMENTE el ticket y lo forzamos a ser blanco y negro */
-  #printable-ticket, 
-  #printable-ticket * {
-    visibility: visible !important;
+  /* Mostrar únicamente el contenedor del ticket */
+  .print-only-section {
     display: block !important;
-    color: black !important;
-    background: white !important;
-  }
-
-  /* 3. Posicionamiento absoluto para que no deje espacios vacíos */
-  #printable-ticket {
-    position: fixed !important;
+    position: absolute !important;
     left: 0 !important;
     top: 0 !important;
-    width: 80mm !important; /* Ajustá a 58mm si usás la chiquita */
-    padding: 0 !important;
+    width: 100% !important;
     margin: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
+    padding: 0 !important;
+    background-color: white !important;
   }
 
-  /* 4. Forzamos al navegador a quitar fondos oscuros */
-  html, body {
+  #printable-ticket {
+    display: block !important;
+    visibility: visible !important;
+    width: 80mm !important; /* Cambiá a 58mm si tu impresora es chica */
     background: white !important;
     color: black !important;
-    width: 100% !important;
-    height: auto !important;
   }
+}
 
-  /* 5. Quitamos los encabezados de Chrome (URL, fecha, etc.) */
-  @page {
-    margin: 0;
-    size: auto;
-  }
+/* En la pantalla normal, esto no se ve */
+.print-only-section {
+  display: none;
 }
