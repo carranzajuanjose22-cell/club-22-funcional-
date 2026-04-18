@@ -7,6 +7,7 @@ import { usePOS } from "../context/POSContext";
 import { ProductSearchModal } from "../components/ProductSearchModal";
 import { PaymentModal } from "../components/PaymentModal";
 import { supabase } from "../../lib/supabase";
+import { TicketTemplate } from "../components/TicketTemplate"; // IMPORTANTE: El template
 
 export function TableDetail() {
   const { id } = useParams();
@@ -28,7 +29,11 @@ export function TableDetail() {
 
   const total = items.reduce((sum, item) => sum + item.subtotal, 0);
 
-  // --- LA FUNCIÓN AHORA ESTÁ ADENTRO DEL COMPONENTE ---
+  // --- FUNCIÓN DE IMPRESIÓN ---
+  const handlePrint = () => {
+    window.print();
+  };
+
   const handleConfirmPayment = async (
     method: string, 
     discount: number, 
@@ -113,7 +118,20 @@ export function TableDetail() {
           <p className="text-5xl text-[#C41E3A] font-bold">${total.toLocaleString()}</p>
         </Card>
         <div className="space-y-3">
-          <Button disabled={items.length === 0} className="w-full h-14 bg-[#C41E3A] text-white hover:bg-[#A01830]" onClick={() => setShowPaymentModal(true)}>
+          {/* BOTÓN DE IMPRESIÓN ACTUALIZADO */}
+          <Button 
+            disabled={items.length === 0} 
+            className="w-full h-14 bg-[#2A2A2A] text-white border border-white/10 hover:bg-[#333]" 
+            onClick={handlePrint}
+          >
+            <Printer className="w-5 h-5 mr-2" />Imprimir Ticket
+          </Button>
+
+          <Button 
+            disabled={items.length === 0} 
+            className="w-full h-14 bg-[#C41E3A] text-white hover:bg-[#A01830]" 
+            onClick={() => setShowPaymentModal(true)}
+          >
             <DollarSign className="w-5 h-5 mr-2" />Cerrar Mesa / Cobrar
           </Button>
         </div>
@@ -127,6 +145,22 @@ export function TableDetail() {
         onConfirm={handleConfirmPayment} 
         total={total} 
       />
+
+      {/* COMPONENTE OCULTO PARA LA IMPRESORA */}
+      <div className="hidden">
+        <div id="printable-ticket">
+          <TicketTemplate 
+            orderData={{
+              tableNumber: table.number,
+              items: items,
+              subtotal: total,
+              discount: 0,
+              total: total,
+              paymentMethod: "Pre-ticket"
+            }} 
+          />
+        </div>
+      </div>
     </div>
   );
 }

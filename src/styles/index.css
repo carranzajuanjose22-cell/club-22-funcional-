@@ -1,3 +1,30 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+/* --- ESTILOS PARA LA COMANDERA --- */
+@media print {
+  /* Ocultamos toda la app (botones, fondos negros, etc) */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Solo mostramos el ticket */
+  #printable-ticket, #printable-ticket * {
+    visibility: visible;
+  }
+
+  /* Posicionamos el ticket arriba a la izquierda para la térmica */
+  #printable-ticket {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm; /* Ajustá a 58mm si tu impresora es la chiquita */
+    background: white;
+    color: black;
+  }
+
+  /* Quitamos márgenes extra que mete el navegador */
+  @page {
+    margin: 0;
+  }
+}
