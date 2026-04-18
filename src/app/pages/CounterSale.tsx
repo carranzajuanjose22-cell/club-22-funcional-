@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { Search, Plus, Trash2, DollarSign, ArrowLeft } from "lucide-react";
+import { Search, Plus, Trash2, DollarSign, ArrowLeft, Printer } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { ProductSearchModal } from "../components/ProductSearchModal";
 import { PaymentModal } from "../components/PaymentModal"; 
+import { TicketTemplate } from "../components/TicketTemplate"; // Importamos el ticket
 import { supabase } from "../../lib/supabase"; 
 import { useNavigate, Link } from "react-router";
 
 export function CounterSale() {
   const navigate = useNavigate();
-  // ESTADOS (Asegurate de que estos nombres coincidan con los que usás abajo)
   const [items, setItems] = useState<any[]>([]);
   const [showProductModal, setShowProductModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -33,7 +33,11 @@ export function CounterSale() {
     setItems(items.filter(item => item.productId !== productId));
   };
 
-  // ESTA ES LA FUNCIÓN QUE COBRA
+  // Función para imprimir
+  const handlePrint = () => {
+    window.print();
+  };
+
   const handleConfirmPayment = async (
     method: string, 
     discount: number, 
@@ -58,6 +62,7 @@ export function CounterSale() {
 
       if (error) throw error;
 
+      alert("Venta registrada con éxito");
       setItems([]); 
       setShowPaymentModal(false);
       navigate("/");
@@ -87,7 +92,7 @@ export function CounterSale() {
             ) : (
               <div className="space-y-4">
                 {items.map((item) => (
-                  <div key={item.productId} className="flex justify-between items-center bg-[#2A2A2A] p-4 rounded-lg text-white border border-white/5">
+                  <div key={item.productId} className="flex justify-between items-center bg-[#2A2A2A] p-4 rounded-lg text-white">
                     <div>
                       <p className="font-medium">{item.productName}</p>
                       <p className="text-sm text-gray-400">Cant: {item.quantity} x ${item.unitPrice}</p>
@@ -107,17 +112,27 @@ export function CounterSale() {
 
         <div className="space-y-6">
           <Card className="bg-[#1A1A1A] border-white/10 p-6 text-white text-center">
-            <p className="text-gray-400 mb-2">Total Venta</p>
+            <p className="text-gray-400 mb-2 font-medium">Total Venta</p>
             <p className="text-5xl font-bold text-[#C41E3A]">${total.toLocaleString()}</p>
           </Card>
           
-          <Button 
-            disabled={items.length === 0}
-            onClick={() => setShowPaymentModal(true)} 
-            className="w-full h-16 bg-[#C41E3A] hover:bg-[#A01830] text-white font-bold text-xl shadow-lg shadow-[#C41E3A]/20"
-          >
-            <DollarSign className="w-6 h-6 mr-2" /> Cobrar
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button 
+              disabled={items.length === 0}
+              onClick={handlePrint}
+              className="w-full h-14 bg-[#2A2A2A] text-white border border-white/10 hover:bg-[#333]"
+            >
+              <Printer className="w-5 h-5 mr-2" /> Imprimir Ticket
+            </Button>
+
+            <Button 
+              disabled={items.length === 0}
+              onClick={() => setShowPaymentModal(true)} 
+              className="w-full h-16 bg-[#C41E3A] hover:bg-[#A01830] text-white font-bold text-xl"
+            >
+              <DollarSign className="w-6 h-6 mr-2" /> Cobrar
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -134,6 +149,22 @@ export function CounterSale() {
         onConfirm={handleConfirmPayment} 
         total={total} 
       />
+
+      {/* Ticket para impresión */}
+      <div className="hidden">
+        <div id="printable-ticket">
+          <TicketTemplate 
+            orderData={{
+              tableNumber: "Mostrador",
+              items: items,
+              subtotal: total,
+              discount: 0,
+              total: total,
+              paymentMethod: "Venta Directa"
+            }} 
+          />
+        </div>
+      </div>
     </div>
   );
 }
