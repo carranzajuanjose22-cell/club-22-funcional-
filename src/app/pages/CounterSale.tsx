@@ -1,33 +1,32 @@
 import { useState } from "react";
-import { Link } from "react-router";
-import { ArrowLeft, Plus, Printer, DollarSign, Trash2, X } from "lucide-react";
+import { Search, Plus, Trash2, DollarSign } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
-import { usePOS } from "../context/POSContext";
+import { Input } from "../components/ui/input";
 import { ProductSearchModal } from "../components/ProductSearchModal";
+import { PaymentModal } from "../components/PaymentModal"; // IMPORTAR EL MODAL
+import { supabase } from "../../lib/supabase"; // IMPORTAR SUPABASE
 import { OrderItem } from "../data/mockData";
+import { useNavigate } from "react-router";
 
 export function CounterSale() {
-  const { addCounterSale } = usePOS();
+  const navigate = useNavigate();
   const [items, setItems] = useState<OrderItem[]>([]);
   const [showProductModal, setShowProductModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false); // ESTADO PARA EL MODAL DE PAGO
+
+  const total = items.reduce((sum, item) => sum + item.subtotal, 0);
 
   const handleAddItem = (newItem: OrderItem) => {
     const existingItemIndex = items.findIndex(item => item.productId === newItem.productId);
-    
-    let updatedItems;
     if (existingItemIndex >= 0) {
-      updatedItems = [...items];
-      updatedItems[existingItemIndex] = {
-        ...updatedItems[existingItemIndex],
-        quantity: updatedItems[existingItemIndex].quantity + newItem.quantity,
-        subtotal: updatedItems[existingItemIndex].subtotal + newItem.subtotal
-      };
+      const updatedItems = [...items];
+      updatedItems[existingItemIndex].quantity += newItem.quantity;
+      updatedItems[existingItemIndex].subtotal += newItem.subtotal;
+      setItems(updatedItems);
     } else {
-      updatedItems = [...items, newItem];
+      setItems([...items, newItem]);
     }
-    
-    setItems(updatedItems);
     setShowProductModal(false);
   };
 
@@ -35,178 +34,97 @@ export function CounterSale() {
     setItems(items.filter(item => item.productId !== productId));
   };
 
-  const handleUpdateQuantity = (productId: string, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      handleRemoveItem(productId);
-      return;
-    }
-
-    setItems(items.map(item => {
-      if (item.productId === productId) {
-        return {
-          ...item,
-          quantity: newQuantity,
-          subtotal: item.unitPrice * newQuantity
-        };
-      }
-      return item;
-    }));
+  // FUNCIÓN PARA ABRIR EL PAGO
+  const handleOpenPayment = () => {
+    if (items.length === 0) return;
+    setShowPaymentModal(true);
   };
 
-  const handleClearSale = () => {
-    if (window.confirm("¿Limpiar toda la venta?")) {
-      setItems([]);
+  // FUNCIÓN PARA GUARDAR EN SUPABASE
+  const handleConfirmPayment = async (method: string, discount: number, finalTotal: number) => {
+    try {
+      const { error } = await supabase.from('sales').insert([{
+        items: items,
+        subtotal: total,
+        discount: discount,
+        total: finalTotal,
+        payment_method: method,
+        type: 'mostrador' // CLAVE: Aquí indicamos que es mostrador
+      }]);
+
+      if (error) throw error;
+
+      alert("Venta de mostrador registrada!");
+      setItems([]); // Limpiamos el carrito
+      setShowPaymentModal(false);
+      navigate("/"); // Volvemos al inicio o nos quedamos aquí según prefieras
+      
+    } catch (error: any) {
+      alert("Error al guardar venta: " + error.message);
     }
   };
-
-  const handleCheckout = () => {
-    const total = items.reduce((sum, item) => sum + item.subtotal, 0);
-    if (window.confirm(`¿Procesar venta por $${total.toLocaleString()}?`)) {
-      addCounterSale(total);
-      alert("Ticket impreso. Venta registrada.");
-      setItems([]);
-    }
-  };
-
-  const total = items.reduce((sum, item) => sum + item.subtotal, 0);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <Link to="/">
-            <Button variant="outline" className="bg-transparent border-white/20 text-white hover:bg-[#2A2A2A]">
-              <ArrowLeft className="w-5 h-5 mr-2" strokeWidth={1.5} />
-              Volver
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl text-white">Venta Mostrador</h1>
-            <p className="text-gray-400">Venta directa / Para llevar</p>
-          </div>
-        </div>
-
-        <Button
-          onClick={() => setShowProductModal(true)}
-          className="bg-[#C41E3A] hover:bg-[#A01830] text-white"
-        >
-          <Plus className="w-5 h-5 mr-2" strokeWidth={1.5} />
-          Agregar Producto
+    <div className="p-8 max-w-4xl mx-auto">
+      <div className="flex justify-between items-center mb-8 text-white">
+        <h1 className="text-3xl font-bold">Venta Mostrador</h1>
+        <Button onClick={() => setShowProductModal(true)} className="bg-[#C41E3A] hover:bg-[#A01830] text-white">
+          <Plus className="w-5 h-5 mr-2" /> Buscar Producto
         </Button>
       </div>
 
-      {/* Order Items */}
-      <Card className="bg-[#1A1A1A] border-white/10 mb-6">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl text-white">Cuenta</h2>
-            {items.length > 0 && (
-              <Button
-                onClick={handleClearSale}
-                variant="ghost"
-                className="text-gray-400 hover:text-[#C41E3A] hover:bg-transparent"
-              >
-                <X className="w-5 h-5 mr-2" strokeWidth={1.5} />
-                Limpiar Venta
-              </Button>
-            )}
-          </div>
-          
-          {items.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <p>No hay productos en la venta</p>
-              <p className="text-sm mt-2">Haz clic en "Agregar Producto" para comenzar</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {/* Header */}
-              <div className="grid grid-cols-12 gap-4 pb-3 border-b border-white/10 text-gray-400 text-sm">
-                <div className="col-span-5">Producto</div>
-                <div className="col-span-2 text-center">Cantidad</div>
-                <div className="col-span-2 text-right">Precio Unit.</div>
-                <div className="col-span-2 text-right">Subtotal</div>
-                <div className="col-span-1"></div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Lista de productos en la venta actual */}
+        <div className="lg:col-span-2 space-y-4">
+          <Card className="bg-[#1A1A1A] border-white/10 p-6">
+            {items.length === 0 ? (
+              <p className="text-center py-12 text-gray-400">Carrito vacío</p>
+            ) : (
+              <div className="space-y-4">
+                {items.map((item) => (
+                  <div key={item.productId} className="flex justify-between items-center bg-[#2A2A2A] p-4 rounded-lg text-white">
+                    <div>
+                      <p className="font-medium">{item.productName}</p>
+                      <p className="text-sm text-gray-400">Cant: {item.quantity} x ${item.unitPrice}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <p className="font-bold">${item.subtotal.toLocaleString()}</p>
+                      <button onClick={() => handleRemoveItem(item.productId)} className="text-gray-500 hover:text-[#C41E3A]">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-
-              {/* Items */}
-              {items.map((item) => (
-                <div
-                  key={item.productId}
-                  className="grid grid-cols-12 gap-4 items-center bg-[#2A2A2A] rounded-lg p-4"
-                >
-                  <div className="col-span-5 text-white">{item.productName}</div>
-                  
-                  <div className="col-span-2 flex items-center justify-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleUpdateQuantity(item.productId, item.quantity - 1)}
-                      className="h-8 w-8 p-0 bg-transparent border-white/20 text-white hover:bg-[#C41E3A] hover:border-[#C41E3A]"
-                    >
-                      -
-                    </Button>
-                    <span className="text-white w-8 text-center">{item.quantity}</span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleUpdateQuantity(item.productId, item.quantity + 1)}
-                      className="h-8 w-8 p-0 bg-transparent border-white/20 text-white hover:bg-[#C41E3A] hover:border-[#C41E3A]"
-                    >
-                      +
-                    </Button>
-                  </div>
-                  
-                  <div className="col-span-2 text-right text-gray-300">
-                    ${item.unitPrice.toLocaleString()}
-                  </div>
-                  
-                  <div className="col-span-2 text-right text-white">
-                    ${item.subtotal.toLocaleString()}
-                  </div>
-                  
-                  <div className="col-span-1 flex justify-end">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleRemoveItem(item.productId)}
-                      className="h-8 w-8 p-0 text-gray-400 hover:text-[#C41E3A] hover:bg-transparent"
-                    >
-                      <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+            )}
+          </Card>
         </div>
-      </Card>
 
-      {/* Total and Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="bg-[#1A1A1A] border-white/10 p-6">
-          <p className="text-gray-400 mb-2">Total a Cobrar</p>
-          <p className="text-5xl text-[#C41E3A]">${total.toLocaleString()}</p>
-        </Card>
-
-        <div className="space-y-3">
-          <Button
-            onClick={handleCheckout}
+        {/* Resumen y Cobro */}
+        <div className="space-y-6">
+          <Card className="bg-[#1A1A1A] border-white/10 p-6 text-white text-center">
+            <p className="text-gray-400 mb-2">Total Venta</p>
+            <p className="text-5xl font-bold text-[#C41E3A]">${total.toLocaleString()}</p>
+          </Card>
+          
+          <Button 
             disabled={items.length === 0}
-            className="w-full h-14 bg-[#C41E3A] hover:bg-[#A01830] text-white"
+            onClick={handleOpenPayment} // <--- AHORA LLAMA AL MODAL
+            className="w-full h-16 bg-[#C41E3A] hover:bg-[#A01830] text-white font-bold text-xl"
           >
-            <DollarSign className="w-5 h-5 mr-2" strokeWidth={1.5} />
-            Cobrar / Imprimir Ticket
+            <DollarSign className="w-6 h-6 mr-2" /> Cobrar
           </Button>
         </div>
       </div>
 
-      {/* Product Search Modal */}
-      <ProductSearchModal
-        open={showProductModal}
-        onClose={() => setShowProductModal(false)}
-        onAddProduct={handleAddItem}
-        isTableView={false}
+      <ProductSearchModal open={showProductModal} onClose={() => setShowProductModal(false)} onAddProduct={handleAddItem} isTableView={false} />
+      
+      {/* MODAL DE PAGO PARA MOSTRADOR */}
+      <PaymentModal 
+        open={showPaymentModal} 
+        onClose={() => setShowPaymentModal(false)} 
+        onConfirm={handleConfirmPayment} 
+        total={total} 
       />
     </div>
   );
