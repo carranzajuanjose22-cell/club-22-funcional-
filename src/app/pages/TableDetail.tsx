@@ -7,12 +7,12 @@ import { usePOS } from "../context/POSContext";
 import { ProductSearchModal } from "../components/ProductSearchModal";
 import { PaymentModal } from "../components/PaymentModal";
 import { supabase } from "../../lib/supabase";
-import { TicketTemplate } from "../components/TicketTemplate"; // IMPORTANTE: El template
+import { TicketTemplate } from "../components/TicketTemplate";
 
 export function TableDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { tables, updateTable, closeTable, setTableStatus } = usePOS();
+  const { tables, updateTable, closeTable } = usePOS();
   
   const table = tables.find(t => t.id === id);
   const [items, setItems] = useState<any[]>(table?.items || []);
@@ -114,11 +114,10 @@ export function TableDetail() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-white">
         <Card className="bg-[#1A1A1A] border-white/10 p-6">
-          <p className="text-gray-400 mb-2">Total</p>
+          <p className="text-gray-400 mb-2 font-medium">Total Mesa</p>
           <p className="text-5xl text-[#C41E3A] font-bold">${total.toLocaleString()}</p>
         </Card>
         <div className="space-y-3">
-          {/* BOTÓN DE IMPRESIÓN ACTUALIZADO */}
           <Button 
             disabled={items.length === 0} 
             className="w-full h-14 bg-[#2A2A2A] text-white border border-white/10 hover:bg-[#333]" 
@@ -146,8 +145,8 @@ export function TableDetail() {
         total={total} 
       />
 
-      {/* COMPONENTE OCULTO PARA LA IMPRESORA */}
-      <div className="hidden">
+      {/* COMPONENTE PARA LA IMPRESORA - EDITADO CON PRINT-ONLY */}
+      <div className="print-only">
         <div id="printable-ticket">
           <TicketTemplate 
             orderData={{

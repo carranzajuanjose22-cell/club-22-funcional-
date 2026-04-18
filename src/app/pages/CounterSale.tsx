@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { ProductSearchModal } from "../components/ProductSearchModal";
 import { PaymentModal } from "../components/PaymentModal"; 
-import { TicketTemplate } from "../components/TicketTemplate"; // Importamos el ticket
+import { TicketTemplate } from "../components/TicketTemplate"; 
 import { supabase } from "../../lib/supabase"; 
 import { useNavigate, Link } from "react-router";
 
@@ -150,8 +150,8 @@ export function CounterSale() {
         total={total} 
       />
 
-      {/* Ticket para impresión */}
-      <div className="hidden">
+      {/* Ticket para impresión - CORREGIDO CON PRINT-ONLY */}
+      <div className="print-only">
         <div id="printable-ticket">
           <TicketTemplate 
             orderData={{
