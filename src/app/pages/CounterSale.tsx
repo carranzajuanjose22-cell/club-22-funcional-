@@ -33,7 +33,6 @@ export function CounterSale() {
     setItems(items.filter(item => item.productId !== productId));
   };
 
-  // Función para imprimir
   const handlePrint = () => {
     window.print();
   };
@@ -150,8 +149,15 @@ export function CounterSale() {
         total={total} 
       />
 
-      {/* Ticket para impresión - CORREGIDO CON PRINT-ONLY */}
-      <div className="print-only">
+      {/* Ticket oculto pero accesible para imprimir */}
+      <div 
+        style={{ 
+          position: 'absolute', 
+          left: '-9999px', 
+          top: 0, 
+          opacity: 0 
+        }}
+      >
         <div id="printable-ticket">
           <TicketTemplate 
             orderData={{
@@ -160,11 +166,11 @@ export function CounterSale() {
               subtotal: total,
               discount: 0,
               total: total,
-              paymentMethod: "Venta Directa"
+              paymentMethod: "Venta"
             }} 
           />
         </div>
       </div>
-    </div>
+    </div> // Div de cierre principal
   );
-}
+} // Llave de cierre del componente

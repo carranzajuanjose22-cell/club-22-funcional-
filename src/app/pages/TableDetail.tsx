@@ -145,12 +145,19 @@ export function TableDetail() {
         total={total} 
       />
 
-      {/* COMPONENTE PARA LA IMPRESORA - EDITADO CON PRINT-ONLY */}
-      <div className="print-only">
+      {/* Ticket para impresión - Técnica de posicionamiento absoluto para que el navegador lo detecte */}
+      <div 
+        style={{ 
+          position: 'absolute', 
+          left: '-9999px', 
+          top: 0, 
+          opacity: 0 
+        }}
+      >
         <div id="printable-ticket">
           <TicketTemplate 
             orderData={{
-              tableNumber: table.number,
+              tableNumber: `Mesa ${table.number}`,
               items: items,
               subtotal: total,
               discount: 0,
@@ -160,6 +167,6 @@ export function TableDetail() {
           />
         </div>
       </div>
-    </div>
+    </div> // CIERRE DEL DIV PRINCIPAL
   );
-}
+} // CIERRE DEL COMPONENTE
