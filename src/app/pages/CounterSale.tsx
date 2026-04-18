@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Plus, Trash2, DollarSign, ArrowLeft, Printer } from "lucide-react";
+import { Plus, Trash2, DollarSign, ArrowLeft, Printer } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { ProductSearchModal } from "../components/ProductSearchModal";
@@ -67,7 +67,7 @@ export function CounterSale() {
       navigate("/");
       
     } catch (error: any) {
-      alert("Error: " + error.message);
+      alert("Error: " + (error.message || "Error desconocido"));
     }
   };
 
@@ -75,7 +75,11 @@ export function CounterSale() {
     <div className="p-8 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-8 text-white">
         <div className="flex items-center gap-4">
-          <Link to="/"><Button variant="outline" className="border-white/10 text-white"><ArrowLeft className="w-4 h-4 mr-2"/>Volver</Button></Link>
+          <Link to="/">
+            <Button variant="outline" className="border-white/10 text-white">
+              <ArrowLeft className="w-4 h-4 mr-2"/>Volver
+            </Button>
+          </Link>
           <h1 className="text-3xl font-bold">Venta Mostrador</h1>
         </div>
         <Button onClick={() => setShowProductModal(true)} className="bg-[#C41E3A] hover:bg-[#A01830] text-white">
@@ -151,6 +155,7 @@ export function CounterSale() {
 
       {/* Ticket oculto pero accesible para imprimir */}
       <div 
+        className="print-container"
         style={{ 
           position: 'absolute', 
           left: '-9999px', 
@@ -171,6 +176,6 @@ export function CounterSale() {
           />
         </div>
       </div>
-    </div> // Div de cierre principal
+    </div>
   );
-} // Llave de cierre del componente
+}
