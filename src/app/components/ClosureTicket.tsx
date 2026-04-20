@@ -63,7 +63,7 @@ export function Reports() {
     if (!confirmClose) return;
 
     try {
-      // 1. Guardar el registro histórico en la tabla de cierres en Supabase
+      // 1. Guardar el registro histórico en la tabla de cierres
       const { error } = await supabase.from('daily_cash_closures').insert([{
         total_amount: totalDay,
         cash_amount: cashTotal,
@@ -76,10 +76,10 @@ export function Reports() {
       // 2. Disparar impresión del ticket de cierre
       window.print();
 
-      alert("¡Caja cerrada! El registro se ha guardado en el historial de Supabase.");
+      alert("¡Caja cerrada! Los datos se guardaron correctamente en el historial.");
       
     } catch (err: any) {
-      alert("Error al cerrar caja: " + err.message);
+      alert("Error al guardar el cierre: " + err.message);
     }
   };
 
@@ -91,12 +91,12 @@ export function Reports() {
   if (loading) return <div className="p-8 text-white text-center font-mono">Generando reporte...</div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 min-h-screen">
+    <div className="p-8 max-w-7xl mx-auto space-y-8 min-h-screen bg-[#0a0a0a]">
       {/* Header con Botón de Cierre */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Reporte Diario</h1>
-          <p className="text-gray-500 font-mono text-sm uppercase">Club 22 - Dashboard de Control</p>
+          <h1 className="text-3xl font-bold text-white tracking-tight">Reporte de Ventas</h1>
+          <p className="text-gray-500 font-mono text-sm">CLUB 22 - Panel de Control Diario</p>
         </div>
         <Button 
           onClick={handleCloseCash} 
@@ -107,42 +107,30 @@ export function Reports() {
         </Button>
       </div>
 
-      {/* Tarjetas de Métricas Principales */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-[#1A1A1A] border-white/5 p-6 text-white shadow-xl">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-500/10 rounded-xl text-green-500">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-gray-500 text-xs uppercase font-bold tracking-widest">Total Ventas</p>
-              <p className="text-3xl font-bold font-mono">${totalDay.toLocaleString()}</p>
-            </div>
+      {/* Tarjetas de Métricas Rápidas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
+        <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-xl">
+          <div className="flex items-center gap-3 mb-2">
+            <TrendingUp className="w-5 h-5 text-gray-400" />
+            <p className="text-gray-400 text-xs uppercase font-bold tracking-widest">Total Ventas</p>
           </div>
+          <p className="text-3xl font-bold font-mono">${totalDay.toLocaleString()}</p>
         </Card>
-
-        <Card className="bg-[#1A1A1A] border-white/5 p-6 text-white shadow-xl border-l-4 border-l-emerald-500">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
-              <Wallet className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-gray-500 text-xs uppercase font-bold tracking-widest">Efectivo</p>
-              <p className="text-3xl font-bold text-emerald-500 font-mono">${cashTotal.toLocaleString()}</p>
-            </div>
+        
+        <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-xl border-l-4 border-l-emerald-500">
+          <div className="flex items-center gap-3 mb-2">
+            <Wallet className="w-5 h-5 text-emerald-500" />
+            <p className="text-gray-400 text-xs uppercase font-bold tracking-widest">Efectivo en Caja</p>
           </div>
+          <p className="text-3xl font-bold text-emerald-500 font-mono">${cashTotal.toLocaleString()}</p>
         </Card>
-
-        <Card className="bg-[#1A1A1A] border-white/5 p-6 text-white shadow-xl border-l-4 border-l-blue-500">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
-              <CreditCard className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-gray-500 text-xs uppercase font-bold tracking-widest">Digital / Transf.</p>
-              <p className="text-3xl font-bold text-blue-500 font-mono">${transferTotal.toLocaleString()}</p>
-            </div>
+        
+        <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-xl border-l-4 border-l-blue-500">
+          <div className="flex items-center gap-3 mb-2">
+            <CreditCard className="w-5 h-5 text-blue-500" />
+            <p className="text-gray-400 text-xs uppercase font-bold tracking-widest">Digital / Transf.</p>
           </div>
+          <p className="text-3xl font-bold text-blue-500 font-mono">${transferTotal.toLocaleString()}</p>
         </Card>
       </div>
 
@@ -166,36 +154,35 @@ export function Reports() {
           </ResponsiveContainer>
         </Card>
 
-        {/* Historial Detallado */}
-        <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-2xl overflow-hidden">
+        {/* Historial de Movimientos */}
+        <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-2xl">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-white text-sm font-bold uppercase tracking-wider flex items-center gap-2">
               <ShoppingBag className="w-4 h-4" /> Movimientos del Día
             </h3>
             <span className="text-xs bg-white/5 text-gray-400 px-2 py-1 rounded">{sales.length} ventas</span>
           </div>
-          <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-            {sales.map((sale) => (
-              <div key={sale.id} className="flex justify-between items-center p-3 bg-white/[0.02] border border-white/5 rounded-xl">
-                <div>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase">{sale.payment_method}</p>
-                  <p className="text-xs text-gray-300">
-                    {new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} hs
-                  </p>
+          <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+            {sales.length === 0 ? (
+               <p className="text-center text-gray-600 py-10">No hay ventas registradas hoy</p>
+            ) : (
+              sales.map((sale) => (
+                <div key={sale.id} className="flex justify-between items-center p-3 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/[0.05] transition-colors">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-500 font-bold uppercase">{sale.payment_method}</span>
+                    <span className="text-xs text-gray-300">
+                      {new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} hs
+                    </span>
+                  </div>
+                  <span className="font-bold text-white font-mono text-lg">${Number(sale.total).toLocaleString()}</span>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-white font-mono text-lg">${Number(sale.total).toLocaleString()}</p>
-                  <p className="text-[9px] text-gray-600 uppercase tracking-tighter">
-                    {sale.type === 'mesa' ? `Mesa ${sale.table_id || ''}` : 'Mostrador'}
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Card>
       </div>
 
-      {/* Contenedor de Impresión (Se activa solo al imprimir) */}
+      {/* Contenedor de Impresión (Invisble en la web) */}
       <div className="print-only-section">
         <div id="printable-ticket">
           <ClosureTicket data={{
