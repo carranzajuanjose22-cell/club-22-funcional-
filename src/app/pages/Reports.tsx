@@ -16,14 +16,25 @@ export function Reports() {
 
   const fetchTodaySales = async () => {
     try {
+      setLoading(true);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const { data, error } = await supabase
+      // 1. LEER EL ÚLTIMO CIERRE: Obtenemos el timestamp guardado
+      const lastClosureTime = localStorage.getItem("last_closure_timestamp");
+
+      let query = supabase
         .from('sales')
         .select('*')
         .gte('created_at', today.toISOString())
         .order('created_at', { ascending: false });
+
+      // 2. FILTRAR: Si hubo un cierre hoy, solo traer lo posterior a ese cierre
+      if (lastClosureTime) {
+        query = query.gt('created_at', lastClosureTime);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setSales(data || []);
@@ -34,7 +45,7 @@ export function Reports() {
     }
   };
 
-  // Cálculos de métricas (Efectivo y Transferencia)
+  // Cálculos de métricas
   const totalDay = sales.reduce((acc, sale) => acc + (Number(sale.total) || 0), 0);
   
   const cashTotal = sales.reduce((acc, sale) => {
@@ -54,16 +65,14 @@ export function Reports() {
 
   const handleCloseCash = async () => {
     if (sales.length === 0) {
-      alert("No hay ventas registradas para cerrar hoy.");
+      alert("No hay movimientos nuevos para cerrar.");
       return;
     }
 
     const confirmClose = window.confirm(
       `¿Deseas confirmar el CIERRE DE CAJA?\n\n` +
-      `Total del día: $${totalDay.toLocaleString()}\n` +
-      `Efectivo: $${cashTotal.toLocaleString()}\n` +
-      `Transferencia: $${transferTotal.toLocaleString()}\n\n` +
-      `Esta acción archivará los datos y limpiará la pantalla actual.`
+      `Total a cerrar: $${totalDay.toLocaleString()}\n\n` +
+      `Al confirmar, estas ventas ya no aparecerán en el reporte diario al refrescar.`
     );
     
     if (!confirmClose) return;
@@ -79,13 +88,16 @@ export function Reports() {
 
       if (error) throw error;
 
-      // 2. Disparar impresión del ticket de cierre
+      // 2. Disparar impresión
       window.print();
 
-      // 3. LIMPIEZA: Reiniciamos el estado local para que todo vuelva a cero
+      // 3. PERSISTIR CIERRE: Guardamos el momento exacto en el navegador
+      localStorage.setItem("last_closure_timestamp", new Date().toISOString());
+
+      // 4. Limpiar estado local
       setSales([]); 
 
-      alert("¡Caja cerrada! El registro histórico se guardó correctamente y la vista se reinició.");
+      alert("¡Caja cerrada! La pantalla se ha reiniciado para nuevos movimientos.");
       
     } catch (err: any) {
       alert("Error al cerrar caja: " + err.message);
@@ -97,7 +109,7 @@ export function Reports() {
     { name: 'Transferencia', value: transferTotal, color: '#3b82f6' },
   ];
 
-  if (loading) return <div className="p-8 text-white text-center font-mono">Generando reporte...</div>;
+  if (loading) return <div className="p-8 text-white text-center font-mono italic">Sincronizando caja...</div>;
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 min-h-screen bg-[#0a0a0a]">
@@ -105,26 +117,24 @@ export function Reports() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Reporte Diario</h1>
-          <p className="text-gray-500 font-mono text-sm uppercase">Club 22 - Dashboard de Control</p>
+          <p className="text-gray-500 font-mono text-sm uppercase tracking-widest">Estado Actual de Caja</p>
         </div>
         <Button 
           onClick={handleCloseCash} 
           className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 px-8 shadow-lg shadow-emerald-900/20 transition-all active:scale-95"
         >
           <DollarSign className="w-5 h-5 mr-2" />
-          Cerrar Caja del Día
+          Cerrar Caja y Reiniciar
         </Button>
       </div>
 
-      {/* Tarjetas de Métricas */}
+      {/* Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
         <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-xl">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-green-500/10 rounded-xl text-green-500">
-              <TrendingUp className="w-6 h-6" />
-            </div>
+            <TrendingUp className="w-6 h-6 text-green-500" />
             <div>
-              <p className="text-gray-500 text-xs uppercase font-bold tracking-widest">Total Ventas</p>
+              <p className="text-gray-500 text-xs uppercase font-bold tracking-widest">Nuevas Ventas</p>
               <p className="text-3xl font-bold font-mono">${totalDay.toLocaleString()}</p>
             </div>
           </div>
@@ -132,11 +142,9 @@ export function Reports() {
 
         <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-xl border-l-4 border-l-emerald-500">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
-              <Wallet className="w-6 h-6" />
-            </div>
+            <Wallet className="w-6 h-6 text-emerald-500" />
             <div>
-              <p className="text-gray-500 text-xs uppercase font-bold tracking-widest">Efectivo</p>
+              <p className="text-gray-500 text-xs uppercase font-bold tracking-widest">Efectivo Nuevo</p>
               <p className="text-3xl font-bold text-emerald-500 font-mono">${cashTotal.toLocaleString()}</p>
             </div>
           </div>
@@ -144,11 +152,9 @@ export function Reports() {
 
         <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-xl border-l-4 border-l-blue-500">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
-              <CreditCard className="w-6 h-6" />
-            </div>
+            <CreditCard className="w-6 h-6 text-blue-500" />
             <div>
-              <p className="text-gray-500 text-xs uppercase font-bold tracking-widest">Digital / Transf.</p>
+              <p className="text-gray-500 text-xs uppercase font-bold tracking-widest">Digital Nuevo</p>
               <p className="text-3xl font-bold text-blue-500 font-mono">${transferTotal.toLocaleString()}</p>
             </div>
           </div>
@@ -157,16 +163,13 @@ export function Reports() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card className="bg-[#1A1A1A] border-white/5 p-6 h-80 shadow-2xl">
-          <h3 className="text-white text-sm font-bold mb-6 uppercase tracking-wider">Distribución</h3>
+          <h3 className="text-white text-sm font-bold mb-6 uppercase tracking-wider">Distribución Nueva</h3>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-              <XAxis dataKey="name" stroke="#555" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#555" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value}`} />
-              <Tooltip 
-                cursor={{fill: 'transparent'}}
-                contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px' }} 
-              />
+              <XAxis dataKey="name" stroke="#555" fontSize={12} />
+              <YAxis stroke="#555" fontSize={12} />
+              <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid #333' }} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={60}>
                 {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
               </Bar>
@@ -174,16 +177,16 @@ export function Reports() {
           </ResponsiveContainer>
         </Card>
 
-        <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-2xl overflow-hidden">
+        <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-2xl overflow-hidden text-white">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-white text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4" /> Movimientos
+              <ShoppingBag className="w-4 h-4" /> Movimientos Nuevos
             </h3>
-            <span className="text-xs bg-white/5 text-gray-400 px-2 py-1 rounded">{sales.length} ventas</span>
+            <span className="text-xs bg-white/5 text-gray-400 px-2 py-1 rounded">{sales.length} items</span>
           </div>
           <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
             {sales.length === 0 ? (
-              <p className="text-center text-gray-600 py-10 italic">Caja cerrada o sin movimientos</p>
+              <p className="text-center text-gray-600 py-10 italic">Sin movimientos registrados después del último cierre.</p>
             ) : (
               sales.map((sale) => (
                 <div key={sale.id} className="flex justify-between items-center p-3 bg-white/[0.02] border border-white/5 rounded-xl">
