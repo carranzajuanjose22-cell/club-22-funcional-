@@ -53,17 +53,23 @@ export function Reports() {
   }, 0);
 
   const handleCloseCash = async () => {
+    if (sales.length === 0) {
+      alert("No hay ventas registradas para cerrar hoy.");
+      return;
+    }
+
     const confirmClose = window.confirm(
       `¿Deseas confirmar el CIERRE DE CAJA?\n\n` +
       `Total del día: $${totalDay.toLocaleString()}\n` +
       `Efectivo: $${cashTotal.toLocaleString()}\n` +
-      `Transferencia: $${transferTotal.toLocaleString()}`
+      `Transferencia: $${transferTotal.toLocaleString()}\n\n` +
+      `Esta acción archivará los datos y limpiará la pantalla actual.`
     );
     
     if (!confirmClose) return;
 
     try {
-      // 1. Guardar el registro histórico en la tabla de cierres en Supabase
+      // 1. Guardar el registro histórico en Supabase
       const { error } = await supabase.from('daily_cash_closures').insert([{
         total_amount: totalDay,
         cash_amount: cashTotal,
@@ -76,7 +82,10 @@ export function Reports() {
       // 2. Disparar impresión del ticket de cierre
       window.print();
 
-      alert("¡Caja cerrada! El registro se ha guardado en el historial de Supabase.");
+      // 3. LIMPIEZA: Reiniciamos el estado local para que todo vuelva a cero
+      setSales([]); 
+
+      alert("¡Caja cerrada! El registro histórico se guardó correctamente y la vista se reinició.");
       
     } catch (err: any) {
       alert("Error al cerrar caja: " + err.message);
@@ -91,8 +100,8 @@ export function Reports() {
   if (loading) return <div className="p-8 text-white text-center font-mono">Generando reporte...</div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 min-h-screen">
-      {/* Header con Botón de Cierre */}
+    <div className="p-8 max-w-7xl mx-auto space-y-8 min-h-screen bg-[#0a0a0a]">
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Reporte Diario</h1>
@@ -107,9 +116,9 @@ export function Reports() {
         </Button>
       </div>
 
-      {/* Tarjetas de Métricas Principales */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-[#1A1A1A] border-white/5 p-6 text-white shadow-xl">
+      {/* Tarjetas de Métricas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-white">
+        <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-xl">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-green-500/10 rounded-xl text-green-500">
               <TrendingUp className="w-6 h-6" />
@@ -121,7 +130,7 @@ export function Reports() {
           </div>
         </Card>
 
-        <Card className="bg-[#1A1A1A] border-white/5 p-6 text-white shadow-xl border-l-4 border-l-emerald-500">
+        <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-xl border-l-4 border-l-emerald-500">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
               <Wallet className="w-6 h-6" />
@@ -133,7 +142,7 @@ export function Reports() {
           </div>
         </Card>
 
-        <Card className="bg-[#1A1A1A] border-white/5 p-6 text-white shadow-xl border-l-4 border-l-blue-500">
+        <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-xl border-l-4 border-l-blue-500">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-500/10 rounded-xl text-blue-500">
               <CreditCard className="w-6 h-6" />
@@ -147,9 +156,8 @@ export function Reports() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Gráfico de Distribución */}
         <Card className="bg-[#1A1A1A] border-white/5 p-6 h-80 shadow-2xl">
-          <h3 className="text-white text-sm font-bold mb-6 uppercase tracking-wider">Distribución de Ingresos</h3>
+          <h3 className="text-white text-sm font-bold mb-6 uppercase tracking-wider">Distribución</h3>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
@@ -166,36 +174,38 @@ export function Reports() {
           </ResponsiveContainer>
         </Card>
 
-        {/* Historial Detallado */}
         <Card className="bg-[#1A1A1A] border-white/5 p-6 shadow-2xl overflow-hidden">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-white text-sm font-bold uppercase tracking-wider flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4" /> Movimientos del Día
+              <ShoppingBag className="w-4 h-4" /> Movimientos
             </h3>
             <span className="text-xs bg-white/5 text-gray-400 px-2 py-1 rounded">{sales.length} ventas</span>
           </div>
           <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-            {sales.map((sale) => (
-              <div key={sale.id} className="flex justify-between items-center p-3 bg-white/[0.02] border border-white/5 rounded-xl">
-                <div>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase">{sale.payment_method}</p>
-                  <p className="text-xs text-gray-300">
-                    {new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} hs
-                  </p>
+            {sales.length === 0 ? (
+              <p className="text-center text-gray-600 py-10 italic">Caja cerrada o sin movimientos</p>
+            ) : (
+              sales.map((sale) => (
+                <div key={sale.id} className="flex justify-between items-center p-3 bg-white/[0.02] border border-white/5 rounded-xl">
+                  <div>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase">{sale.payment_method}</p>
+                    <p className="text-xs text-gray-300">
+                      {new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} hs
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-white font-mono text-lg">${Number(sale.total).toLocaleString()}</p>
+                    <p className="text-[9px] text-gray-600 uppercase tracking-tighter">
+                      {sale.type === 'mesa' ? `Mesa ${sale.table_id || ''}` : 'Mostrador'}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-white font-mono text-lg">${Number(sale.total).toLocaleString()}</p>
-                  <p className="text-[9px] text-gray-600 uppercase tracking-tighter">
-                    {sale.type === 'mesa' ? `Mesa ${sale.table_id || ''}` : 'Mostrador'}
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </Card>
       </div>
 
-      {/* Contenedor de Impresión (Se activa solo al imprimir) */}
       <div className="print-only-section">
         <div id="printable-ticket">
           <ClosureTicket data={{
