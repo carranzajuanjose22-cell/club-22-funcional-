@@ -15,7 +15,6 @@ export function TicketTemplate({ orderData }: any) {
 
   return (
     <div 
-      id="printable-ticket" 
       className="p-4 text-black bg-white w-[80mm] font-mono text-xs leading-tight"
       style={{ backgroundColor: 'white', color: 'black' }} // Refuerzo para la impresora
     >

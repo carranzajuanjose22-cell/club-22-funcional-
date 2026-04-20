@@ -3,14 +3,18 @@
 @import './theme.css';
 
 /* --- ESTILOS PARA LA COMANDERA --- */
-/* Limpieza total para impresión */
+/* Impresión: no usar display:none en body > * porque #root envuelve toda la app
+   y el ticket queda dentro de #root → salía la hoja en blanco. */
 @media print {
-  /* Ocultar todo el contenido de la aplicación */
-  body > * {
-    display: none !important;
+  body * {
+    visibility: hidden;
   }
 
-  /* Mostrar únicamente el contenedor del ticket */
+  .print-only-section,
+  .print-only-section * {
+    visibility: visible;
+  }
+
   .print-only-section {
     display: block !important;
     position: absolute !important;
@@ -24,10 +28,11 @@
 
   #printable-ticket {
     display: block !important;
-    visibility: visible !important;
     width: 80mm !important; /* Cambiá a 58mm si tu impresora es chica */
     background: white !important;
     color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
 

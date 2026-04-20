@@ -4,7 +4,7 @@ export function ClosureTicket({ data }: { data: any }) {
   if (!data) return null;
 
   return (
-    <div id="printable-ticket" className="p-4 bg-white text-black text-sm font-mono w-[80mm]">
+    <div className="p-4 bg-white text-black text-sm font-mono w-[80mm]">
       <div className="text-center border-b border-dashed border-black pb-2 mb-2">
         <h2 className="text-xl font-bold uppercase">CLUB 22</h2>
         <p className="text-xs font-bold">CIERRE DE CAJA DIARIO</p>
